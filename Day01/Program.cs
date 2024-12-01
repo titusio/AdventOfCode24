@@ -1,5 +1,5 @@
-﻿
-// process the input string and return an array of integers
+﻿// process the input string and return an array of integers
+
 static int[] GetNumbers(string input)
 {
     IEnumerable<string> elements = input.Split(" ", StringSplitOptions.TrimEntries);
@@ -20,30 +20,17 @@ static int[] GetNumbers(string input)
 
 // Solution for Part one of Day 1.
 // The task is to calculate the sum of the absolute differences between the smallest number in each pair of numbers.
-static int GetDistances(int[] leftNumbersInput, int[] rightNumbersInput)
+static int GetDistances(int[] leftNumbers, int[] rightNumbers)
 {
-    int countedNumbers = 0;
     int result = 0;
-    
-    // copy the input arrays to avoid modifying the original arrays
-    int[] leftNumbers = leftNumbersInput.ToArray();
-    int[] rightNumbers = rightNumbersInput.ToArray();
 
-    while (countedNumbers < leftNumbers.Length)
+    Queue<int> leftQueue = new(leftNumbers.Order());
+    Queue<int> rightQueue = new(rightNumbers.Order());
+
+    while (leftQueue.TryDequeue(out int left))
     {
-        int smallestLeft = leftNumbers.Min();
-        int leftIndex = Array.IndexOf(leftNumbers, smallestLeft);
-
-        int smallestRight = rightNumbers.Min();
-        int rightIndex = Array.IndexOf(rightNumbers, smallestRight);
-
-        int distance = Math.Abs(smallestLeft - smallestRight);
-        result += distance;
-
-        leftNumbers[leftIndex] = int.MaxValue;
-        rightNumbers[rightIndex] = int.MaxValue;
-
-        countedNumbers++;
+        int right = rightQueue.Dequeue();
+        result += Math.Abs(left - right);
     }
 
     return result;
@@ -54,10 +41,10 @@ static int GetDistances(int[] leftNumbersInput, int[] rightNumbersInput)
 static int GetSimilarity(int[] leftNumbers, int[] rightNumbers)
 {
     int result = 0;
-    
+
     foreach (int leftNumber in leftNumbers)
     {
-        int matches = Enumerable.Range(0, leftNumbers.Length).Count(j => leftNumber == rightNumbers[j]);
+        int matches = rightNumbers.Count(rightNumber => leftNumber == rightNumber);
         result += matches * leftNumber;
     }
 
@@ -93,8 +80,7 @@ for (int i = 0; i < numbers.Length; i++)
 }
 
 int distances = GetDistances(leftNumbers, rightNumbers); // 2756096
-Console.WriteLine("The sum of the distances is: " + distances); 
+Console.WriteLine("The sum of the distances is: " + distances);
 
 int similarity = GetSimilarity(leftNumbers, rightNumbers); // 23117829
 Console.WriteLine("The similarity is: " + similarity);
-
