@@ -12,7 +12,7 @@ public class Program
     {
         return lines.Select(l => l.Split(" ", StringSplitOptions.TrimEntries).Select(int.Parse).ToArray());
     }
-
+    
     /// <summary>
     /// Checks if the report is safe.
     /// A report is safe if all the differences between the numbers are either positive or negative,
@@ -59,7 +59,38 @@ public class Program
         lines = File.ReadAllLines("Day02.txt");
         IEnumerable<int[]> reports = ParseInput(lines);
 
-        int correctReports = reports.Count(IsSave);
-        Console.WriteLine($"there are {correctReports} correct reports");
+        int correctReports = 0;
+        int toleratedReports = 0;
+        
+        foreach (int[] report in reports)
+        {
+            bool isSafe = IsSave(report);
+            
+            if (isSafe)
+            {
+                // add to first puzzle
+                correctReports++;
+                // add to second puzzle
+                toleratedReports++;
+                continue;
+            }
+            
+            for (int i = 0; i < report.Length; i++)
+            {
+                // array without the i-th element
+                int[] newReport = report.Take(i).Concat(report.Skip(i + 1)).ToArray();
+                // check if the new report is safe
+                bool isSafeWithout = IsSave(newReport);
+                
+                if (!isSafeWithout) continue;
+                
+                toleratedReports++;
+                // break the inner loop
+                break;
+            }
+        }
+
+        Console.WriteLine($"The number of correct reports is: {correctReports}");
+        Console.WriteLine($"The number of tolerated reports is: {toleratedReports}");
     }
 }
