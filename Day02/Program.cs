@@ -12,7 +12,7 @@ public class Program
     {
         return lines.Select(l => l.Split(" ", StringSplitOptions.TrimEntries).Select(int.Parse).ToArray());
     }
-    
+
     /// <summary>
     /// Checks if the report is safe.
     /// A report is safe if all the differences between the numbers are either positive or negative,
@@ -23,18 +23,18 @@ public class Program
     private static bool IsSave(int[] report)
     {
         List<int> differences = [];
-        
+
         for (int i = 1; i < report.Length; i++)
         {
             int diff = report[i] - report[i - 1];
             differences.Add(diff);
         }
-        
+
         bool positive = differences.Any(d => d > 0);
         bool negative = differences.Any(d => d < 0);
-        
+
         bool invalidDifferences = positive && negative;
-        
+
         if (invalidDifferences)
         {
             return false;
@@ -42,7 +42,7 @@ public class Program
 
         return !differences.Distinct().Any(d => d == 0 || Math.Abs(d) > 3);
     }
-    
+
     public static void Main()
     {
         // string input = File.ReadAllText("Day02.txt");
@@ -54,18 +54,18 @@ public class Program
                        8 6 4 4 1
                        1 3 6 7 9
                        """;
-        
+
         string[] lines = input.Split("\n", StringSplitOptions.RemoveEmptyEntries);
         lines = File.ReadAllLines("Day02.txt");
         IEnumerable<int[]> reports = ParseInput(lines);
 
         int correctReports = 0;
         int toleratedReports = 0;
-        
+
         foreach (int[] report in reports)
         {
             bool isSafe = IsSave(report);
-            
+
             if (isSafe)
             {
                 // add to first puzzle
@@ -74,23 +74,23 @@ public class Program
                 toleratedReports++;
                 continue;
             }
-            
+
             for (int i = 0; i < report.Length; i++)
             {
                 // array without the i-th element
                 int[] newReport = report.Take(i).Concat(report.Skip(i + 1)).ToArray();
                 // check if the new report is safe
                 bool isSafeWithout = IsSave(newReport);
-                
+
                 if (!isSafeWithout) continue;
-                
+
                 toleratedReports++;
                 // break the inner loop
                 break;
             }
         }
 
-        Console.WriteLine($"The number of correct reports is: {correctReports}");
-        Console.WriteLine($"The number of tolerated reports is: {toleratedReports}");
+        Console.WriteLine($"The number of correct reports is: {correctReports}"); // 306
+        Console.WriteLine($"The number of tolerated reports is: {toleratedReports}"); // 366
     }
 }
