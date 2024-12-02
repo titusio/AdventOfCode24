@@ -27,6 +27,12 @@ public class Program
         for (int i = 1; i < report.Length; i++)
         {
             int diff = report[i] - report[i - 1];
+
+            if (Math.Abs(diff) > 3 || diff == 0)
+            {
+                return false;
+            }
+
             differences.Add(diff);
         }
 
@@ -35,12 +41,7 @@ public class Program
 
         bool invalidDifferences = positive && negative;
 
-        if (invalidDifferences)
-        {
-            return false;
-        }
-
-        return !differences.Distinct().Any(d => d == 0 || Math.Abs(d) > 3);
+        return !invalidDifferences;
     }
 
     public static void Main()
