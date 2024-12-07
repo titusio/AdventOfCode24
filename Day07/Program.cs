@@ -29,19 +29,22 @@ class Program
         return equations;
     }
 
-    private static bool IsPossible(long result, long[] terms, long current = 0)
+    private static bool IsPossible(long result, long[] terms, bool withPipes, long current = 0)
     {
         if (terms.Length == 1)
         {
             bool mul = current * terms[0] == result;
             bool add = current + terms[0] == result;
-            return mul || add;
+            bool p = withPipes && long.Parse(current + terms[0].ToString()) == result;
+            return mul || add || p;
         }
 
-        bool multiply = current != 0 && IsPossible(result, terms[1..], current * terms[0]);
-        bool addition = IsPossible(result, terms[1..], current + terms[0]);
+        bool multiply = current != 0 && IsPossible(result, terms[1..], withPipes, current * terms[0]);
+        bool addition = IsPossible(result, terms[1..], withPipes, current + terms[0]);
+        bool piping = withPipes && current != 0 &&
+                      IsPossible(result, terms[1..], withPipes, long.Parse(current + terms[0].ToString()));
 
-        return multiply || addition;
+        return multiply || addition || piping;
     }
 
     static void Main()
@@ -62,16 +65,10 @@ class Program
 
         Equation[] equations = ParseInput(input);
 
-        long sum = 0;
-        foreach (Equation equation in equations)
-        {
-            if (IsPossible(equation.Result, equation.Terms))
-            {
-                sum += equation.Result;
-            }
-        }
-
-        // long sum = equations.Where(e => IsPossible(e.Result, e.Terms)).Sum(e => e.Result);
+        long sum = equations.Where(e => IsPossible(e.Result, e.Terms, false)).Sum(e => e.Result); // 882304362421
         Console.WriteLine(sum);
+
+        long sumWithPipes = equations.Where(e => IsPossible(e.Result, e.Terms, true)).Sum(e => e.Result); // 
+        Console.WriteLine(sumWithPipes);
     }
 }
