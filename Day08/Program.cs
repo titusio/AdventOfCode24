@@ -37,7 +37,7 @@ class Program
         return antennae;
     }
 
-    public static int CountAntinodes(List<Antenna> antennae, int width, int height)
+    public static int CountAntinodes(List<Antenna> antennae, int width, int height, bool extend = false)
     {
         HashSet<ValueTuple<int, int>> antinodes = [];
 
@@ -50,14 +50,32 @@ class Program
                 int dx = antennaB.X - antennaA.X;
                 int dy = antennaB.Y - antennaA.Y;
 
+                if (extend)
+                {
+                    antinodes.Add((antennaA.X, antennaA.Y));
+                    antinodes.Add((antennaB.X, antennaB.Y));
+                }
+
                 int aX = antennaA.X - dx;
                 int aY = antennaA.Y - dy;
                 int bX = antennaB.X + dx;
                 int bY = antennaB.Y + dy;
 
-                antinodes.Add((aX, aY));
+                while (aX >= 0 && aX < width && aY >= 0 && aY < height)
+                {
+                    antinodes.Add((aX, aY));
+                    aX -= dx;
+                    aY -= dy;
+                    if (!extend) break;
+                }
 
-                antinodes.Add((bX, bY));
+                while (bX >= 0 && bX < width && bY >= 0 && bY < height)
+                {
+                    antinodes.Add((bX, bY));
+                    bX += dx;
+                    bY += dy;
+                    if (!extend) break;
+                }
             }
         }
 
@@ -85,5 +103,7 @@ class Program
         List<Antenna> antennae = ParseInput(input, out int width, out int height);
         int antinodes = CountAntinodes(antennae, width, height);
         Console.WriteLine($"Found {antinodes} antinodes");
+        int extendedAntinodes = CountAntinodes(antennae, width, height, true);
+        Console.WriteLine($"Found {extendedAntinodes} extended antinodes");
     }
 }
