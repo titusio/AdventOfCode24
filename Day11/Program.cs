@@ -2,31 +2,48 @@
 
 class Program
 {
-    private static List<long> GetInput(string input)
+    private readonly Dictionary<ulong, bool> _isEvenLength = new();
+    private readonly Dictionary<ulong, ValueTuple<ulong, ulong>> _splitNumbers = new();
+
+    private static List<ulong> GetInput(string input)
     {
-        return input.Split(' ').Select(long.Parse).ToList();
+        return input.Split(' ').Select(ulong.Parse).ToList();
     }
 
-    private static void Blink(List<long> stones)
+    private void Blink(List<ulong> stones)
     {
         int i = 0;
 
         while (i < stones.Count)
         {
-            if (stones[i] == 0)
+            ulong currentStone = stones[i];
+            if (currentStone == 0)
             {
                 stones[i] = 1;
                 i += 1;
                 continue;
             }
 
-            string num = stones[i].ToString();
-            if (num.Length % 2 == 0)
+            if (!_isEvenLength.TryGetValue(currentStone, out bool evenLength))
             {
-                string first = num[..(num.Length / 2)];
-                string second = num[(num.Length / 2)..];
-                stones[i] = long.Parse(first);
-                stones.Insert(i + 1, long.Parse(second));
+                string str = currentStone.ToString();
+                evenLength = str.Length % 2 == 0;
+
+                _isEvenLength.Add(currentStone, evenLength);
+
+                if (evenLength)
+                {
+                    string first = str[..(str.Length / 2)];
+                    string second = str[(str.Length / 2)..];
+                    _splitNumbers[currentStone] = (ulong.Parse(first), ulong.Parse(second));
+                }
+            }
+
+            if (evenLength)
+            {
+                ValueTuple<ulong, ulong> splits = _splitNumbers[currentStone];
+                stones[i] = splits.Item1;
+                stones.Insert(i + 1, splits.Item2);
                 i += 2;
                 continue;
             }
@@ -40,12 +57,14 @@ class Program
     {
         string input = "125 17";
         input = File.ReadAllText("Day11.txt");
-        List<long> stones = GetInput(input);
+        List<ulong> stones = GetInput(input);
 
-        for (int i = 0; i < 25; i++)
+        Program program = new();
+
+        for (int i = 0; i < 75; i++)
         {
             Console.WriteLine($"step {i}");
-            Blink(stones);
+            program.Blink(stones);
         }
 
         Console.WriteLine($"we have {stones.Count} stones");
