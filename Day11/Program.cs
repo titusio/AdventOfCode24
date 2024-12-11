@@ -5,6 +5,7 @@ class Program
     private readonly Dictionary<ulong, bool> _isEvenLength = new();
     private readonly Dictionary<ulong, ValueTuple<ulong, ulong>> _splitNumbers = new();
 
+
     private static List<ulong> GetInput(string input)
     {
         return input.Split(' ').Select(ulong.Parse).ToList();
@@ -14,7 +15,8 @@ class Program
     {
         int i = 0;
 
-        while (i < stones.Count)
+        int stonesCount = stones.Count;
+        while (i < stonesCount)
         {
             ulong currentStone = stones[i];
             if (currentStone == 0)
@@ -43,7 +45,7 @@ class Program
             {
                 ValueTuple<ulong, ulong> splits = _splitNumbers[currentStone];
                 stones[i] = splits.Item1;
-                stones.Insert(i + 1, splits.Item2);
+                stones.Add(splits.Item2);
                 i += 2;
                 continue;
             }
