@@ -67,6 +67,7 @@ class Program
         {
             Console.WriteLine($"step {i}");
             program.Blink(stones);
+            Console.WriteLine(stones.Count);
         }
 
         Console.WriteLine($"we have {stones.Count} stones");
