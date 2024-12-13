@@ -10,6 +10,16 @@ public struct Direction
         X = x;
         Y = y;
     }
+
+    public static Direction operator *(Direction direction, double scalar)
+    {
+        return new Direction((int)(direction.X * scalar), (int)(direction.Y * scalar));
+    }
+
+    public static Direction operator -(Direction direction, Direction other)
+    {
+        return new Direction(direction.X - other.X, direction.Y - other.Y);
+    }
 }
 
 public class Problem
@@ -78,6 +88,30 @@ class Program
         return result == int.MaxValue ? 0 : result;
     }
 
+    private static long Problem2(Problem problem)
+    {
+        // cramers rule
+        long aX = problem.ButtonA.X;
+        long aY = problem.ButtonA.Y;
+        long bX = problem.ButtonB.X;
+        long bY = problem.ButtonB.Y;
+
+        long prizeX = problem.Prize.X + 10000000000000;
+        long prizeY = problem.Prize.Y + 10000000000000;
+
+        long det = aX * bY - aY * bX;
+        long detX = prizeX * bY - prizeY * bX;
+        long detY = aX * prizeY - aY * prizeX;
+
+        long a = (long)Math.Round(detX / (double)det);
+        long b = (long)Math.Round(detY / (double)det);
+
+        long resultX = aX * a + bX * b;
+        long resultY = aY * a + bY * b;
+
+        return resultX == prizeX && resultY == prizeY ? 3 * a + b : 0;
+    }
+
     static void Main(string[] args)
     {
         string input = """
@@ -104,5 +138,8 @@ class Program
         int result = problems.Sum(SolveProblem1);
 
         Console.WriteLine(result);
+
+        long sum = problems.Sum(Problem2);
+        Console.WriteLine(sum);
     }
 }
