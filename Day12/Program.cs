@@ -52,13 +52,33 @@ public class Garden
             }
         }
 
-        IEnumerable<Plant> duplicates = garden.Nodes.GroupBy(s => s)
-            .SelectMany(grp => grp.Skip(1));
-
-        foreach (Plant duplicate in duplicates)
+        garden.Nodes.Add(new Plant()
         {
-            Console.WriteLine($"Duplicate found at {duplicate.X}, {duplicate.Y}");
-        }
+            X = -1,
+            Y = -1,
+            IsOutside = true,
+        });
+
+        garden.Nodes.Add(new Plant()
+        {
+            X = garden.Width,
+            Y = -1,
+            IsOutside = true,
+        });
+
+        garden.Nodes.Add(new Plant()
+        {
+            X = -1,
+            Y = garden.Height,
+            IsOutside = true,
+        });
+
+        garden.Nodes.Add(new Plant()
+        {
+            X = garden.Width,
+            Y = garden.Height,
+            IsOutside = true,
+        });
 
         return garden;
     }
@@ -79,23 +99,26 @@ public class Garden
             Nodes.Add(neighbour);
     }
 
-    public int GetConnected()
+    public (int, int) GetConnected()
     {
         HashSet<Plant> visited = new();
-        int total = 0;
+        int first = 0;
+        int second = 0;
 
         foreach (Plant plant in Nodes)
         {
             if (plant.IsOutside || visited.Contains(plant)) continue;
-            total += GetConnected(visited, plant);
+            (int, int) result = GetConnected(visited, plant);
+            first += result.Item1;
+            second += result.Item2;
         }
 
-        return total;
+        return new ValueTuple<int, int>(first, second);
     }
 
-    private int GetConnected(HashSet<Plant> visited, Plant plant)
+    private ValueTuple<int, int> GetConnected(HashSet<Plant> visited, Plant plant)
     {
-        if (visited.Contains(plant)) return 0;
+        if (visited.Contains(plant)) return (0, 0);
 
         Queue<Plant> queue = [];
         queue.Enqueue(plant);
@@ -103,6 +126,8 @@ public class Garden
         char type = plant.Type;
         int bordersFound = 0;
         int plantsFound = 0;
+
+        HashSet<Plant?> corners = [];
 
         while (queue.TryDequeue(out Plant? currentPlant))
         {
@@ -114,18 +139,54 @@ public class Garden
             foreach (Plant neighbor in currentPlant.Neighbors)
             {
                 if (neighbor.IsOutside || neighbor.Type != currentPlant.Type)
+                {
                     bordersFound += 1;
+                }
 
                 if (!visited.Contains(neighbor) && neighbor.Type == currentPlant.Type && !queue.Contains(neighbor))
                 {
                     queue.Enqueue(neighbor);
                 }
             }
+
+            AddCorner(plant, 1, 1);
+            AddCorner(plant, -1, 1);
+            AddCorner(plant, 1, -1);
+            AddCorner(plant, -1, -1);
         }
 
-        Console.WriteLine(
-            $"Found {plantsFound} plants of type {type} and {bordersFound} borders resulting in {plantsFound * bordersFound}");
-        return bordersFound * plantsFound;
+        Console.WriteLine($"Plant {type} has {corners.Count} sides!");
+
+        return (bordersFound * plantsFound, plantsFound * corners.Count);
+
+        void AddCorner(Plant p, int x, int y)
+        {
+            Plant side = GetPlant(p.X + x, p.Y);
+            Plant top = GetPlant(p.X, p.Y + y);
+            Plant corner = GetPlant(p.X + x, p.Y + y);
+
+            bool sideGood = side.IsOutside || side.Type != type;
+            bool topGood = top.IsOutside || top.Type != type;
+            bool cornerGood = corner.IsOutside || corner.Type != type;
+
+            if (sideGood && topGood && cornerGood)
+            {
+                if (corners.Add(corner))
+                    Console.WriteLine($"Plant {type} has the corner {corner.X}, {corner.Y}");
+            }
+        }
+    }
+
+    private Plant GetPlant(int x, int y)
+    {
+        Plant? plant = Nodes.FirstOrDefault(n => n.X == x && n.Y == y);
+
+        if (plant is null)
+        {
+            throw new Exception($"Plant at {x}, {y} not found!");
+        }
+
+        return plant;
     }
 }
 
@@ -134,20 +195,16 @@ class Program
     static void Main(string[] args)
     {
         string input = """
-                       RRRRIICCFF
-                       RRRRIICCCF
-                       VVRRRCCFFF
-                       VVRCCCJFFF
-                       VVVVCJJCFE
-                       VVIVCCJJEE
-                       VVIIICJJEE
-                       MIIIIIJJEE
-                       MIIISIJEEE
-                       MMMISSJEEE
+                       AAAA
+                       BBCD
+                       BBCC
+                       EEEC
                        """;
 
-        input = File.ReadAllText("Day12.txt");
+        // input = File.ReadAllText("Day12.txt");
         Garden garden = Garden.CreateFromInput(input);
-        Console.WriteLine($"Found {garden.GetConnected()} connected plants");
+        (int, int) results = garden.GetConnected();
+        Console.WriteLine($"need {results.Item1} fences");
+        Console.WriteLine($"need {results.Item2} cheap fences");
     }
 }
