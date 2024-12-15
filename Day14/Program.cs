@@ -145,12 +145,9 @@ class Program
         string input = File.ReadAllText("Day14.txt");
 
         room.Robots = Robot.ParseFromInput(input);
-        Console.WriteLine(room);
 
         Console.WriteLine($"simulating 100 steps...");
         room.Simulate(100);
-
-        Console.WriteLine(room);
 
         int middleX = room.Width / 2;
         int middleY = room.Height / 2;
@@ -162,5 +159,20 @@ class Program
 
         int result = topLeft * topRight * bottomLeft * bottomRight;
         Console.WriteLine(result);
+
+        room.Robots = Robot.ParseFromInput(input);
+
+        int steps = 0;
+        while (true)
+        {
+            room.Simulate(1);
+            steps++;
+            // these requirements are from other solutions lol
+            if (room.Robots.GroupBy(r => r.Position.Y).Count(g => g.Count() >= 31) != 2) continue;
+            if (room.Robots.GroupBy(r => r.Position.X).Count(g => g.Count() >= 25) < 2) continue;
+            Console.WriteLine(room);
+            Console.WriteLine("steps: " + steps);
+            break;
+        }
     }
 }
