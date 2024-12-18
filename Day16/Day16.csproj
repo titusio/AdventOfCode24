@@ -8,14 +8,13 @@
         <AssemblyName>AdventOfCode.Day16</AssemblyName>
         <RootNamespace>AdventOfCode.Day16</RootNamespace>
     </PropertyGroup>
-
-    <ItemGroup>
-        <ProjectReference Include="..\Day14\Day14.csproj"/>
-    </ItemGroup>
     <ItemGroup>
         <Content Include="..\Input\Day16.txt">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </Content>
+    </ItemGroup>
+    <ItemGroup>
+      <ProjectReference Include="..\Utils\Utils.csproj" />
     </ItemGroup>
 
 </Project>
