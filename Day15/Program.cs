@@ -7,7 +7,9 @@ public enum WarehouseTile
     Wall = '#',
     Empty = '.',
     Box = 'O',
-    Robot = '@'
+    Robot = '@',
+    PackageLeft = '[',
+    PackageRight = ']'
 }
 
 public enum Move
@@ -25,10 +27,10 @@ public class Warehouse
     public int Height { get; private init; }
 
     private Direction _robotPosition;
-    
+
     private Queue<Move> _moves = [];
 
-    public static Warehouse FromInput(string input)
+    public static Warehouse FromInput(string input, bool extendPackages = false)
     {
         string[] lines = input.Split("\n", StringSplitOptions.RemoveEmptyEntries);
 
@@ -85,18 +87,64 @@ public class Warehouse
             }
         }
 
-        Warehouse warehouse = new()
+        if (!extendPackages)
         {
-            Grid = grid,
-            Width = width,
+            return new Warehouse()
+            {
+                Grid = grid,
+                Width = width,
+                Height = height,
+                _robotPosition = robotPosition,
+                _moves = new Queue<Move>(moves)
+            };
+        }
+
+        WarehouseTile[,] extendedGrid = new WarehouseTile[width * 2, height];
+        for (y = 0; y < height; y++)
+        {
+            int currentX = 0;
+
+            for (int x = 0; x < width; x++)
+            {
+                WarehouseTile tile = grid[x, y];
+                if (tile is WarehouseTile.Wall or WarehouseTile.Empty)
+                {
+                    extendedGrid[currentX, y] = tile;
+                    extendedGrid[currentX + 1, y] = tile;
+                    currentX += 2;
+                    continue;
+                }
+
+                if (tile == WarehouseTile.Robot)
+                {
+                    extendedGrid[currentX, y] = tile;
+                    extendedGrid[currentX + 1, y] = WarehouseTile.Empty;
+                    robotPosition = new Direction(currentX, y);
+                    currentX += 2;
+                    continue;
+                }
+
+                if (tile == WarehouseTile.Box)
+                {
+                    extendedGrid[currentX, y] = WarehouseTile.PackageLeft;
+                    extendedGrid[currentX + 1, y] = WarehouseTile.PackageRight;
+                    currentX += 2;
+                    continue;
+                }
+            }
+        }
+
+        return new Warehouse()
+        {
+            Grid = extendedGrid,
+            Width = width * 2,
             Height = height,
             _robotPosition = robotPosition,
-            _moves = new Queue<Move>(moves) 
+            _moves = new Queue<Move>(moves)
         };
-        return warehouse;
     }
 
-    public void ApplyMoves()
+    public void ApplyMoves(bool debug = false)
     {
         while (_moves.TryDequeue(out Move nextMove))
         {
@@ -109,35 +157,124 @@ public class Warehouse
                 Move.Right => new Direction(1, 0),
                 _ => throw new Exception($"Unknown move '{nextMove}'")
             };
-            
+
             TryMove(position, direction);
+            
+            if (debug)
+            {
+                Print();
+                Console.WriteLine("Moved: " + nextMove);
+                Console.WriteLine();
+            }
         }
     }
 
     private bool TryMove(Direction position, Direction direction)
     {
         WarehouseTile tile = Grid[position.X, position.Y];
+        Direction nextPosition = position + direction;
 
         // we can move into an empty space
         if (tile == WarehouseTile.Empty) return true;
-        
+
         // we can't move anything into a wall
         if (tile == WarehouseTile.Wall) return false;
-        
-        Direction nextPosition = position + direction;
-        bool moved = TryMove(nextPosition, direction);
 
-        if (!moved) return false;
-
-        Grid[position.X, position.Y] = WarehouseTile.Empty;
-        Grid[nextPosition.X, nextPosition.Y] = tile;
-        if (tile == WarehouseTile.Robot)
+        if (tile is WarehouseTile.Robot or WarehouseTile.Box)
         {
-            _robotPosition = nextPosition;
+            bool moved = TryMove(nextPosition, direction);
+            
+            if (!moved) return false;
+            
+            Grid[position.X, position.Y] = WarehouseTile.Empty;
+            Grid[nextPosition.X, nextPosition.Y] = tile;
+
+            if (tile == WarehouseTile.Robot)
+            {
+                _robotPosition = nextPosition;
+            }
+
+            return true;
         }
-        return true;
+
+        if (tile == WarehouseTile.PackageLeft)
+        {
+            if (direction.X == 0)
+            {
+                bool leftMoved = TryMove(nextPosition, direction);
+                bool rightMoved = TryMove(nextPosition + new Direction(1, 0), direction);
+                bool moved = leftMoved && rightMoved;
+
+                if (!moved) return false;
+                
+                Grid[position.X, position.Y] = WarehouseTile.Empty;
+                Grid[position.X + 1, position.Y] = WarehouseTile.Empty;
+                Grid[nextPosition.X, nextPosition.Y] = WarehouseTile.PackageLeft;
+                Grid[nextPosition.X + 1, nextPosition.Y] = WarehouseTile.PackageRight;
+            }
+            else
+            {
+                bool moved = TryMove(position + direction * 2, direction);
+                if (!moved) return false;
+                
+                Grid[position.X, position.Y] = WarehouseTile.Empty;
+                // move the package to the right
+                if (direction.X > 0)
+                {
+                    Grid[position.X + 1, position.Y] = WarehouseTile.PackageLeft;
+                    Grid[position.X + 2, position.Y] = WarehouseTile.PackageRight;
+                }
+                // move the package to the left
+                else
+                {
+                    Grid[position.X - 1, position.Y] = WarehouseTile.PackageRight;
+                    Grid[position.X - 2, position.Y] = WarehouseTile.PackageLeft;
+                }
+            }
+            
+            return true;
+        }
+
+        if (tile == WarehouseTile.PackageRight)
+        {
+            if (direction.X == 0)
+            {
+                bool leftMoved = TryMove(nextPosition + new Direction(-1, 0), direction);
+                bool rightMoved = TryMove(nextPosition, direction);
+                bool moved = leftMoved && rightMoved;
+
+                if (!moved) return false;
+                
+                Grid[position.X, position.Y] = WarehouseTile.Empty;
+                Grid[position.X - 1, position.Y] = WarehouseTile.Empty;
+                Grid[nextPosition.X, nextPosition.Y] = WarehouseTile.PackageRight;
+                Grid[nextPosition.X - 1, nextPosition.Y] = WarehouseTile.PackageLeft;
+            }
+            else
+            {
+                bool moved = TryMove(position + direction * 2, direction);
+                if (!moved) return false;
+                
+                Grid[position.X, position.Y] = WarehouseTile.Empty;
+                // move the package to the right
+                if (direction.X > 0)
+                {
+                    Grid[position.X + 1, position.Y] = WarehouseTile.PackageLeft;
+                    Grid[position.X + 2, position.Y] = WarehouseTile.PackageRight;
+                }
+                else
+                {
+                    Grid[position.X - 1, position.Y] = WarehouseTile.PackageRight;
+                    Grid[position.X - 2, position.Y] = WarehouseTile.PackageLeft;
+                }
+            }
+
+            return true;
+        }
+
+        throw new Exception();
     }
-    
+
     public void Print()
     {
         for (int y = 0; y < Height; y++)
@@ -150,9 +287,12 @@ public class Warehouse
                     WarehouseTile.Empty => '.',
                     WarehouseTile.Box => 'O',
                     WarehouseTile.Robot => '@',
+                    WarehouseTile.PackageLeft => '[',
+                    WarehouseTile.PackageRight => ']',
                     _ => throw new Exception($"Unknown tile '{Grid[x, y]}' at ({x}, {y})")
                 });
             }
+
             Console.WriteLine();
         }
     }
@@ -164,7 +304,11 @@ public class Warehouse
         {
             for (int y = 0; y < Height; y++)
             {
-                if (Grid[x, y] == WarehouseTile.Box)
+                if (Grid[x, y] is WarehouseTile.Box)
+                {
+                    result += x + 100 * y;
+                }
+                else if (Grid[x, y] is WarehouseTile.PackageLeft)
                 {
                     result += x + 100 * y;
                 }
@@ -181,30 +325,27 @@ class Program
     {
         string input = """
                        ##########
-                       #..O..O.O#
-                       #......O.#
-                       #.OO..O.O#
-                       #..O@..O.#
-                       #O#..O...#
-                       #O..O..O.#
-                       #.OO.O.OO#
-                       #....O...#
+                       #....#.O.#
+                       #.O.O..#.#
+                       #...OOO.O#
+                       #.#.#....#
+                       ##O..@.#.#
+                       #..OOO.OO#
+                       #..OOOOO.#
+                       #.....#O.#
                        ##########
                        
-                       <vv>^<v^>v>^vv^v>v<>v^v<v<^vv<<<^><<><>>v<vvv<>^v^>^<<<><<v<<<v^vv^v>^
-                       vvv<<^>^v^^><<>>><>^<<><^vv^^<>vvv<>><^^v>^>vv<>v<<<<v<^v>^<^^>>>^<v<v
-                       ><>vv>v^v^<>><>>>><^^>vv>v<^^^>>v^v^<^^>v^^>v^<^v>v<>>v^v^<v>v^^<^^vv<
-                       <<v<^>>^^^^>>>v^<>vvv^><v<<<>^^^vv^<vvv>^>v<^^^^v<>^>vvvv><>>v^<<^^^^^
-                       ^><^><>>><>^^<<^^v>>><^<v>^<vv>>v>>>^v><>^v><<<<v>>v<v<v>vvv>^<><<>^><
-                       ^>><>^v<><^vvv<^^<><v<<<<<><^v<<<><<<^^<v<^^^><^>>^<v^><<<^>>^v<v^v<v^
-                       >^>>^v>vv>^<<^v<>><<><<v<<v><>v<^vv<<<>^^v^>^^>>><<^v>>v^v><^^>>^<>vv^
-                       <><^^>^^^<><vvvvv^v<v<<>^v<v>v<<^><<><<><<<^^<<<^<<>><<><^^^>^^<>^>v<>
-                       ^^>vv<^v^v<vv>^<><v<^v>^^^>>>^^vvv^>vvv<>>>^<^>>>>>^<<^v>^vvv<>^<><<v>
-                       v^^>>><<^^<>>^v^<v^vv<>v^<<>^<^v^v><^<<<><<^<v><v<>vv>>v><v^<vv<>v^<<^
+                       <^<<>v^><<><>><v>>^^^>>v^vv><>>vv^><v>^>
                        """;
-        input = File.ReadAllText("Day15.txt");
+        // input = File.ReadAllText("Day15.txt");
         Warehouse warehouse = Warehouse.FromInput(input);
-        warehouse.ApplyMoves();
-        Console.WriteLine(warehouse.CalculateBoxGps());
+        // warehouse.ApplyMoves();
+        warehouse.Print();
+        Console.WriteLine($"Gps of the boxes: {warehouse.CalculateBoxGps()}");
+
+        Warehouse bigWarehouse = Warehouse.FromInput(input, true);
+        bigWarehouse.ApplyMoves(true);
+        bigWarehouse.Print();
+        Console.WriteLine($"Gps of the boxes: {bigWarehouse.CalculateBoxGps()}");
     }
 }

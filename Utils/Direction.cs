@@ -41,6 +41,11 @@ public struct Direction
     {
         return new Direction(a.X - b.X, a.Y - b.Y);
     }
+    
+    public static Direction operator *(Direction a, int b)
+    {
+        return new Direction(a.X * b, a.Y * b);
+    }
 
     public override string ToString()
     {
