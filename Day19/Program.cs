@@ -4,7 +4,7 @@ class Program
 {
     public required string[] _availablePatterns;
     public required string[] _requestedCombinations;
-    private readonly Dictionary<string, int> _cache = new();
+    private readonly Dictionary<string, long> _cache = new();
 
     private static void ParseInput(string input, out string[] availablePatterns, out string[] requestedCombinations)
     {
@@ -32,28 +32,22 @@ class Program
     }
 
 
-    private int GetCombinations(string goal)
+    private long GetCombinations(string goal)
     {
-        if (_cache.TryGetValue(goal, out int combinations))
-        {
-            return combinations;
-        }
-
-        combinations = 0;
-
         if (string.IsNullOrWhiteSpace(goal))
         {
             return 1;
         }
 
-        foreach (string pattern in _availablePatterns)
+        if (_cache.TryGetValue(goal, out long combinations))
         {
-            if (!goal.StartsWith(pattern)) continue;
-
-            string newGoal = goal[pattern.Length..];   
-            combinations += GetCombinations(newGoal);
-            if (combinations > 0) break;
+            return combinations;
         }
+
+        combinations = _availablePatterns
+            .Where(goal.StartsWith)
+            .Select(pattern => GetCombinations(goal[pattern.Length..]))
+            .Sum();
 
         _cache.TryAdd(goal, combinations);
 
@@ -85,13 +79,16 @@ class Program
         };
 
         int possible = 0;
+        long total = 0;
 
         foreach (string combination in requestedCombinations)
         {
-            int combinations = program.GetCombinations(combination);
+            long combinations = program.GetCombinations(combination);
             if (combinations > 0) possible += 1;
+            total += combinations;
         }
 
         Console.WriteLine($"{possible} combinations are possible.");
+        Console.WriteLine($"Total number of combinations: {total}");
     }
 }
